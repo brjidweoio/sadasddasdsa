@@ -306,6 +306,24 @@ body {
   margin-top: 6px;
 }
 
+.vuln-added {
+  font-size: 0.75rem;
+  color: var(--text3);
+  margin-top: 4px;
+}
+
+.token-hint {
+  font-size: 0.84rem;
+  color: var(--text2);
+  line-height: 1.5;
+}
+
+.token-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
 /* MODAL */
 .modal {
   position: fixed;
