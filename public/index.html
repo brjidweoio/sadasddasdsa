@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vuln Tracker</title>
+  <title>Megacase &amp; Sleeva</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -25,6 +25,7 @@
         <span class="logo-small">Megacase &amp; Sleeva</span>
       </div>
       <div class="header-right">
+        <button id="token-btn" class="btn-ghost">Ключ</button>
         <button id="add-btn" class="btn-primary">+ Добавить</button>
       </div>
     </header>
@@ -64,7 +65,7 @@
     <div class="modal-card">
       <div class="modal-header">
         <h2>Добавить уязвимость</h2>
-        <button id="modal-close" class="modal-close">✕</button>
+        <button id="modal-close" class="modal-close">&#10005;</button>
       </div>
 
       <label>Сайт</label>
@@ -88,6 +89,23 @@
       </div>
 
       <button id="form-submit" class="btn-primary full">Добавить</button>
+    </div>
+  </div>
+
+  <!-- Модалка токена -->
+  <div id="token-modal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>GitHub токен</h2>
+        <button id="token-modal-close" class="modal-close">&#10005;</button>
+      </div>
+      <p class="token-hint">Нужен чтобы отмечать уязвимости исправленными глобально для всех.</p>
+      <label>Токен</label>
+      <input id="token-input" type="password" placeholder="ghp_..." />
+      <div class="token-actions">
+        <button id="token-save" class="btn-primary" style="width:auto;flex:1">Сохранить</button>
+        <button id="token-clear" class="btn-ghost">Удалить</button>
+      </div>
     </div>
   </div>
 
