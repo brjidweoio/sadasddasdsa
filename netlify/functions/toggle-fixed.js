@@ -4,6 +4,10 @@ const REPO      = 'brjidweoio/sadasddasdsa';
 const FILE_PATH = 'public/fixed.json';
 const TOKEN     = process.env.GITHUB_TOKEN;
 
+if (!TOKEN) {
+  console.error('GITHUB_TOKEN environment variable is not set!');
+}
+
 exports.handler = async (event) => {
   const cors = {
     'Access-Control-Allow-Origin': '*',
@@ -26,6 +30,10 @@ exports.handler = async (event) => {
   const { id, nick, action } = body;
   if (!id || !nick || !action) {
     return { statusCode: 400, headers: cors, body: JSON.stringify({ error: 'Missing fields' }) };
+  }
+
+  if (!TOKEN) {
+    return { statusCode: 500, headers: cors, body: JSON.stringify({ error: 'GITHUB_TOKEN not configured in Netlify environment variables' }) };
   }
 
   try {
