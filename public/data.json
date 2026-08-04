@@ -55,7 +55,7 @@
   },
   {
     "id": 1,
-    "site": "Megacase",
+    "site": "Sleeva",
     "title": "jwt algorithm disclosure на /api/casino/user/balance",
     "description": "разные alg в bearer - разные ошибки. none пишет signature is missing, hs256 с фейк hmac пишет algorithm is invalid. по тексту ошибок понятно что сервер реально принимает и как валидирует",
     "severity": "critical",
@@ -64,7 +64,7 @@
   },
   {
     "id": 2,
-    "site": "Megacase",
+    "site": "Sleeva",
     "title": "surrealdb injection в password на signup",
     "description": "post /api/auth/email/signup тащит password в surrealdb. test123 - 400 password too short, or 1=1 - 400 noscript, union select - 403 waiting for confirm. create/select/define function иногда 201. poc с return array group select email from user тоже 201 ok. если define function реально встала в бд - это уже жесть",
     "severity": "critical",
@@ -73,7 +73,7 @@
   },
   {
     "id": 3,
-    "site": "Megacase",
+    "site": "Sleeva",
     "title": "/api/casino/play/demo обрабатывает до проверки авторизации",
     "description": "без токена: кривой gameid - 400 invalid game id, нормальный uuid из каталога - 400 internal server error вместо 403. сервер лезет в demo сессию и падает внутри, в traceparent видно что запрос реально крутится",
     "severity": "high",
@@ -82,7 +82,7 @@
   },
   {
     "id": 4,
-    "site": "Megacase",
+    "site": "Sleeva",
     "title": "patch /api/casino/user/settings/username отдает 404",
     "description": "в бандле маршрут есть, на бэке route not found. ник через api не поменять, но фронт и бэк расходятся",
     "severity": "high",
@@ -91,7 +91,7 @@
   },
   {
     "id": 5,
-    "site": "Megacase",
+    "site": "Sleeva",
     "title": "потенциальный idor на балансе через userid в query",
     "description": "get /api/casino/user/balance?userid=X параметр принимается. без токена 403, но с валидным jwt надо чекнуть чужой userid - если отдаст чужой баланс то idor",
     "severity": "high",
@@ -100,16 +100,16 @@
   },
   {
     "id": 6,
-    "site": "Megacase",
+    "site": "Sleeva",
     "title": "get /api/payments/crypto/methods без авторизации",
-    "description": "отдает все крипто методы - сети, мин суммы, withdrawal флаги. curl https://megacase.com/api/payments/crypto/methods",
+    "description": "отдает все крипто методы - сети, мин суммы, withdrawal флаги. curl https://sleeva.com/api/payments/crypto/methods",
     "severity": "high",
     "date": "2026-06-13",
     "addedBy": "backd00r"
   },
   {
     "id": 7,
-    "site": "Megacase",
+    "site": "Sleeva",
     "title": "get /api/auth/steam/return обрабатывает openid параметры без проверки авторизации",
     "description": "через get /api/auth/steam/return полностью обрабатывает openid параметры без предварительной проверки авторизации пользователя",
     "severity": "high",
@@ -118,7 +118,7 @@
   },
   {
     "id": 8,
-    "site": "Megacase",
+    "site": "Sleeva",
     "title": "полная карта backend api из js бандла - 30 маршрутов",
     "description": "1k50m996cfj4c.js раскрывает апи пути включая финансовые",
     "severity": "high",
