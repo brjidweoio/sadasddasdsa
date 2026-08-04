@@ -1,6 +1,6 @@
 const https = require('https');
 
-const REPO      = 'brjidweoio/sadasddasdsa';
+const REPO      = 'brjidweoio/sadasddasdsa'; // v2
 const FILE_PATH = 'public/fixed.json';
 const TOKEN     = process.env.GITHUB_TOKEN;
 
