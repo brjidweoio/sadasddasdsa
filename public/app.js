@@ -1,5 +1,5 @@
 // ── Config
-const DATA_VERSION  = '5';
+const DATA_VERSION  = '6';
 const GITHUB_REPO   = 'brjidweoio/sadasddasdsa';
 const RAW_FIXED_URL = () => `https://raw.githubusercontent.com/${GITHUB_REPO}/main/public/fixed.json?t=${Date.now()}`;
 const RAW_DATA_URL  = () => `https://raw.githubusercontent.com/${GITHUB_REPO}/main/public/data.json?t=${Date.now()}`;
