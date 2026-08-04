@@ -1,18 +1,18 @@
 // ── Config
-const DATA_VERSION = '4';
-const GITHUB_REPO  = 'brjidweoio/sadasddasdsa';
-const RAW_DATA_URL  = () => `https://raw.githubusercontent.com/${GITHUB_REPO}/main/public/data.json?t=${Date.now()}`;
+const DATA_VERSION  = '5';
+const GITHUB_REPO   = 'brjidweoio/sadasddasdsa';
 const RAW_FIXED_URL = () => `https://raw.githubusercontent.com/${GITHUB_REPO}/main/public/fixed.json?t=${Date.now()}`;
-const API_FIXED_URL = `https://api.github.com/repos/${GITHUB_REPO}/contents/public/fixed.json`;
+const RAW_DATA_URL  = () => `https://raw.githubusercontent.com/${GITHUB_REPO}/main/public/data.json?t=${Date.now()}`;
+const FN_URL        = '/.netlify/functions/toggle-fixed';
 
 // ── State
-let nick          = '';
-let vulns         = [];
-let fixedMap      = {};
-let ghToken       = '';
-let activeSite    = 'all';
-let activeStatus  = 'all';
+let nick         = '';
+let vulns        = [];
+let fixedMap     = {};
+let activeSite   = 'all';
+let activeStatus = 'all';
 let selectedSeverity = 'critical';
+let toggling     = false;
 
 // ── Init
 window.addEventListener('DOMContentLoaded', async () => {
@@ -20,25 +20,18 @@ window.addEventListener('DOMContentLoaded', async () => {
     localStorage.removeItem('vt_vulns');
     localStorage.setItem('vt_version', DATA_VERSION);
   }
+  nick = localStorage.getItem('vt_nick') || '';
 
-  nick    = localStorage.getItem('vt_nick')    || '';
-  ghToken = localStorage.getItem('vt_token')   || '';
-
-  await loadAll();
+  await Promise.all([loadVulns(), loadFixed()]);
 
   if (nick) showMain();
 
   bindEvents();
 });
 
-async function loadAll() {
-  await Promise.all([loadVulns(), loadFixed()]);
-}
-
 async function loadVulns() {
   const stored = localStorage.getItem('vt_vulns');
   if (stored) { try { vulns = JSON.parse(stored); return; } catch {} }
-
   try {
     const r = await fetch(RAW_DATA_URL());
     vulns = await r.json();
@@ -50,9 +43,7 @@ async function loadFixed() {
   try {
     const r = await fetch(RAW_FIXED_URL());
     if (r.ok) fixedMap = await r.json();
-  } catch {
-    fixedMap = {};
-  }
+  } catch { fixedMap = {}; }
 }
 
 // ── Nick
@@ -64,9 +55,10 @@ function showMain() {
 
 // ── Events
 function bindEvents() {
-  const nickInput = document.getElementById('nick-input');
+  document.getElementById('nick-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitNick();
+  });
   document.getElementById('nick-btn').addEventListener('click', submitNick);
-  nickInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitNick(); });
 
   document.querySelectorAll('.site-tab').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -92,14 +84,6 @@ function bindEvents() {
     if (e.target === document.getElementById('modal')) closeAddModal();
   });
 
-  document.getElementById('token-btn').addEventListener('click', openTokenModal);
-  document.getElementById('token-modal-close').addEventListener('click', closeTokenModal);
-  document.getElementById('token-modal').addEventListener('click', e => {
-    if (e.target === document.getElementById('token-modal')) closeTokenModal();
-  });
-  document.getElementById('token-save').addEventListener('click', saveToken);
-  document.getElementById('token-clear').addEventListener('click', clearToken);
-
   document.querySelectorAll('.sev-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.sev-btn').forEach(b => b.classList.remove('active'));
@@ -119,45 +103,16 @@ function submitNick() {
   showMain();
 }
 
-// ── Token modal
-function openTokenModal() {
-  document.getElementById('token-input').value = ghToken;
-  document.getElementById('token-modal').classList.remove('hidden');
-  document.getElementById('token-input').focus();
-}
-function closeTokenModal() {
-  document.getElementById('token-modal').classList.add('hidden');
-}
-function saveToken() {
-  const val = document.getElementById('token-input').value.trim();
-  ghToken = val;
-  localStorage.setItem('vt_token', ghToken);
-  closeTokenModal();
-  updateTokenBadge();
-}
-function clearToken() {
-  ghToken = '';
-  localStorage.removeItem('vt_token');
-  document.getElementById('token-input').value = '';
-  closeTokenModal();
-  updateTokenBadge();
-}
-function updateTokenBadge() {
-  const btn = document.getElementById('token-btn');
-  btn.textContent = ghToken ? 'Ключ: ON' : 'Ключ';
-  btn.style.color = ghToken ? 'var(--green)' : '';
-  btn.style.borderColor = ghToken ? 'var(--green)' : '';
-}
-
 // ── Add modal
 function openAddModal() {
   document.getElementById('modal').classList.remove('hidden');
   document.getElementById('form-title').focus();
 }
+
 function closeAddModal() {
   document.getElementById('modal').classList.add('hidden');
   document.getElementById('form-title').value = '';
-  document.getElementById('form-desc').value = '';
+  document.getElementById('form-desc').value  = '';
   document.querySelectorAll('.sev-btn').forEach(b => b.classList.remove('active'));
   document.querySelector('.sev-btn[data-sev="critical"]').classList.add('active');
   selectedSeverity = 'critical';
@@ -167,7 +122,6 @@ function submitVuln() {
   const site  = document.getElementById('form-site').value;
   const title = document.getElementById('form-title').value.trim();
   const desc  = document.getElementById('form-desc').value.trim();
-
   if (!title) {
     const inp = document.getElementById('form-title');
     inp.focus();
@@ -175,86 +129,70 @@ function submitVuln() {
     setTimeout(() => { inp.style.borderColor = ''; }, 1500);
     return;
   }
-
-  const newVuln = {
+  const v = {
     id: Date.now(), site, title,
     description: desc,
     severity: selectedSeverity,
     date: new Date().toISOString().split('T')[0],
     addedBy: nick
   };
-
-  vulns.unshift(newVuln);
+  vulns.unshift(v);
   localStorage.setItem('vt_vulns', JSON.stringify(vulns));
   closeAddModal();
   render();
 }
 
-// ── Toggle fixed (global via GitHub API)
+// ── Toggle fixed (global via Netlify Function)
 async function toggleFixed(id) {
-  if (!ghToken) {
-    openTokenModal();
-    return;
-  }
+  if (toggling) return;
+  toggling = true;
 
-  const key = String(id);
-  const card = document.querySelector(`[data-id="${id}"]`);
-  if (card) card.style.opacity = '0.5';
+  const key     = String(id);
+  const isFixed = !!fixedMap[key];
+  const action  = isFixed ? 'unfix' : 'fix';
 
-  const newFixedMap = Object.assign({}, fixedMap);
-  if (newFixedMap[key]) {
-    delete newFixedMap[key];
+  // Optimistic update
+  const prev = Object.assign({}, fixedMap);
+  if (action === 'fix') {
+    fixedMap[key] = { nick, date: new Date().toISOString().split('T')[0] };
   } else {
-    newFixedMap[key] = { nick, date: new Date().toISOString().split('T')[0] };
+    delete fixedMap[key];
   }
+  render();
 
   try {
-    const shaRes = await fetch(API_FIXED_URL, {
-      headers: { Authorization: `Bearer ${ghToken}` }
-    });
-    const shaData = await shaRes.json();
-    const sha = shaData.sha;
-
-    const content = btoa(unescape(encodeURIComponent(JSON.stringify(newFixedMap, null, 2))));
-
-    const putRes = await fetch(API_FIXED_URL, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${ghToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ message: `toggle fix: ${key}`, content, sha })
+    const res = await fetch(FN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, nick, action })
     });
 
-    if (putRes.ok) {
-      fixedMap = newFixedMap;
+    if (res.ok) {
+      fixedMap = await res.json();
     } else {
-      const err = await putRes.json();
-      alert('Ошибка: ' + (err.message || 'не удалось сохранить'));
+      fixedMap = prev;
     }
-  } catch (e) {
-    alert('Ошибка соединения с GitHub');
+  } catch {
+    fixedMap = prev;
   }
 
+  toggling = false;
   render();
 }
 
 // ── Render
 function render() {
-  updateTokenBadge();
   const list = document.getElementById('vuln-list');
 
   let filtered = vulns.slice();
-  if (activeSite !== 'all') filtered = filtered.filter(v => v.site === activeSite);
-  if (activeStatus === 'open')  filtered = filtered.filter(v => !fixedMap[String(v.id)]);
+  if (activeSite !== 'all')    filtered = filtered.filter(v => v.site === activeSite);
+  if (activeStatus === 'open') filtered = filtered.filter(v => !fixedMap[String(v.id)]);
   if (activeStatus === 'fixed') filtered = filtered.filter(v => !!fixedMap[String(v.id)]);
 
-  const siteFiltered = activeSite === 'all' ? vulns : vulns.filter(v => v.site === activeSite);
-  const openCount  = siteFiltered.filter(v => !fixedMap[String(v.id)]).length;
-  const fixedCount = siteFiltered.filter(v => !!fixedMap[String(v.id)]).length;
-  document.getElementById('count-all').textContent   = siteFiltered.length;
-  document.getElementById('count-open').textContent  = openCount;
-  document.getElementById('count-fixed').textContent = fixedCount;
+  const base = activeSite === 'all' ? vulns : vulns.filter(v => v.site === activeSite);
+  document.getElementById('count-all').textContent   = base.length;
+  document.getElementById('count-open').textContent  = base.filter(v => !fixedMap[String(v.id)]).length;
+  document.getElementById('count-fixed').textContent = base.filter(v => !!fixedMap[String(v.id)]).length;
 
   if (filtered.length === 0) {
     list.innerHTML = `<div class="empty-state"><p>Уязвимостей не найдено</p></div>`;
@@ -265,7 +203,6 @@ function render() {
     const key     = String(v.id);
     const isFixed = !!fixedMap[key];
     const fixer   = fixedMap[key];
-
     return `
       <div class="vuln-card ${isFixed ? 'fixed' : ''}" data-id="${v.id}" onclick="toggleFixed(${v.id})">
         <div class="vuln-checkbox">${isFixed ? '&#10003;' : ''}</div>
@@ -290,8 +227,6 @@ function sevLabel(sev) {
 
 function escHtml(str) {
   return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
